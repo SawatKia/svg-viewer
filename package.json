@@ -2,8 +2,8 @@
   "name": "svg-viewer",
   "displayName": "svg-viewer",
   "description": "better previewing svg ux",
-  "version": "0.0.3",
-  "publisher": "local",
+  "version": "0.0.31",
+  "publisher": "sawatastic",
   "repository": {
     "type": "git",
     "url": "https://github.com/SawatKia/svg-viewer.git"
