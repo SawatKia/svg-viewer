@@ -2,14 +2,14 @@
   "name": "svg-viewer",
   "displayName": "svg-viewer",
   "description": "better previewing svg ux",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "local",
   "repository": {
     "type": "git",
-    "url": "https://github.com/local/svg-viewer"
+    "url": "https://github.com/SawatKia/svg-viewer.git"
   },
   "engines": {
-    "vscode": "^1.109.0"
+    "vscode": "^1.107.0"
   },
   "categories": [
     "Other"
@@ -43,7 +43,8 @@
       "svg-viewer-sidebar": [
         {
           "id": "svg-viewer.explorer",
-          "name": "Explorer"
+          "name": "Explorer",
+          "icon": "resources/sidebar.svg"
         }
       ]
     },
@@ -73,7 +74,7 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.109.0",
+    "@types/vscode": "^1.107.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
     "typescript-eslint": "^8.54.0",

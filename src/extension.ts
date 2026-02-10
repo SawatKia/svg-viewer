@@ -172,29 +172,29 @@ class SvgPreviewProvider implements vscode.CustomTextEditorProvider {
                     padding: 0;
                     overflow: hidden;
                     background-color: var(--vscode-editor-background);
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
                     height: 100vh;
                     width: 100vw;
                 }
                 #container {
                     width: 100%;
                     height: 100%;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
+                    position: relative;
                     overflow: hidden;
+                    cursor: grab;
+                }
+                #container:active {
+                    cursor: grabbing;
                 }
                 #content {
-                    transform-origin: center;
-                    transition: transform 0.05s ease-out;
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    transform-origin: 0 0;
                 }
-                /* Ensure SVG scales correctly */
                 #content svg {
-                    max-width: 100%;
-                    max-height: 100%;
                     display: block;
+                    width: auto;
+                    height: auto;
                 }
             </style>
         </head>
@@ -218,21 +218,47 @@ class SvgPreviewProvider implements vscode.CustomTextEditorProvider {
                     const message = event.data;
                     if (message.type === 'update') {
                         content.innerHTML = message.text;
+                        scale = 1;
+                        translateX = 0;
+                        translateY = 0;
+                        updateTransform();
+                        // Wait for layout to settle
+                        setTimeout(centerContent, 50);
                     }
                 });
 
-                // Zoom with mouse wheel
-                window.addEventListener('wheel', (e) => {
+                function centerContent() {
+                    const containerRect = container.getBoundingClientRect();
+                    const contentRect = content.getBoundingClientRect();
+                    
+                    translateX = (containerRect.width - contentRect.width) / 2;
+                    translateY = (containerRect.height - contentRect.height) / 2;
+                    updateTransform();
+                }
+
+                // Zoom with mouse wheel aiming at cursor
+                container.addEventListener('wheel', (e) => {
                     e.preventDefault();
+                    
+                    const rect = container.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const mouseY = e.clientY - rect.top;
+
+                    // Zoom in (1.1) or out (0.9)
                     const delta = e.deltaY > 0 ? 0.9 : 1.1;
-                    scale *= delta;
-                    // Clamp scale if needed, but let's keep it free for now
+                    const newScale = scale * delta;
+
+                    // Calculate new translation to keep the point under cursor fixed
+                    translateX = mouseX - (mouseX - translateX) * delta;
+                    translateY = mouseY - (mouseY - translateY) * delta;
+                    scale = newScale;
+
                     updateTransform();
                 });
 
-                // Pan with middle mouse button
-                window.addEventListener('mousedown', (e) => {
-                    if (e.button === 1) { // Middle mouse button
+                // Pan with left (0) or middle (1) mouse button
+                container.addEventListener('mousedown', (e) => {
+                    if (e.button === 0 || e.button === 1) {
                         e.preventDefault();
                         isPanning = true;
                         startX = e.clientX - translateX;
@@ -251,12 +277,12 @@ class SvgPreviewProvider implements vscode.CustomTextEditorProvider {
 
                 window.addEventListener('mouseup', () => {
                     isPanning = false;
-                    container.style.cursor = 'default';
+                    container.style.cursor = 'grab';
                 });
                 
                 window.addEventListener('mouseleave', () => {
                     isPanning = false;
-                    container.style.cursor = 'default';
+                    container.style.cursor = 'grab';
                 });
 
                 function updateTransform() {
