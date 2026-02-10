@@ -1,3 +1,4 @@
+// svg-viewer\src\extension.ts
 import * as vscode from 'vscode';
 import { SvgHistoryTreeProvider } from './SvgHistoryTreeProvider';
 import { SvgCustomEditorProvider } from './SvgCustomEditorProvider';
@@ -14,7 +15,7 @@ export function activate(context: vscode.ExtensionContext) {
 			new SvgCustomEditorProvider(context, historyProvider),
 			{
 				webviewOptions: {
-					retainContextWhenHidden: true,
+					retainContextWhenHidden: false,
 				},
 				supportsMultipleEditorsPerDocument: false,
 			}

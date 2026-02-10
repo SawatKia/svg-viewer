@@ -2,7 +2,7 @@
   "name": "svg-viewer",
   "displayName": "svg-viewer",
   "description": "better previewing svg ux",
-  "version": "0.0.31",
+  "version": "0.0.4",
   "publisher": "sawatastic",
   "repository": {
     "type": "git",
