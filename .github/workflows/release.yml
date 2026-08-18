@@ -1,0 +1,85 @@
+name: Release VSIX
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release VSIX
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile and verify
+        run: npm run compile
+
+      - name: Determine version and extract changelog
+        id: meta
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "vsix_file=svg-viewer-${VERSION}.vsix" >> "$GITHUB_OUTPUT"
+
+          # Extract notes for this version from CHANGELOG.md if available
+          node -e "
+            const fs = require('fs');
+            if (!fs.existsSync('CHANGELOG.md')) {
+              fs.writeFileSync('RELEASE_NOTES.md', 'Release ' + process.env.TAG);
+              process.exit(0);
+            }
+            const content = fs.readFileSync('CHANGELOG.md', 'utf8');
+            const version = process.env.VERSION;
+            const regex = new RegExp('## \\\\[?' + version.replace('.', '\\\\.') + '\\\\]?[^\\\\n]*\\\\n([\\\\s\\\\S]*?)(?=(?:\\\\n## |$))');
+            const match = content.match(regex);
+            const notes = match ? match[1].trim() : 'Release ' + process.env.TAG;
+            fs.writeFileSync('RELEASE_NOTES.md', notes);
+          "
+        env:
+          VERSION: ${{ steps.meta.outputs.version || '' }}
+          TAG: ${{ steps.meta.outputs.tag || '' }}
+
+      - name: Package VSIX
+        run: |
+          npx --yes @vscode/vsce package --no-dependencies --out "${{ steps.meta.outputs.vsix_file }}"
+
+      - name: Upload VSIX Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.vsix_file }}
+          path: ${{ steps.meta.outputs.vsix_file }}
+          if-no-files-found: error
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: Release ${{ steps.meta.outputs.tag }}
+          body_path: RELEASE_NOTES.md
+          files: ${{ steps.meta.outputs.vsix_file }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

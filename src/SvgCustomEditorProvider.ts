@@ -297,6 +297,60 @@ export class SvgCustomEditorProvider implements vscode.CustomTextEditorProvider 
                 #content.smooth {
                     transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
                 }
+
+                /* ── Backgrounds ───────────────────────────── */
+                .bg-white { background-color: #ffffff !important; }
+                .bg-black { background-color: #1a1a1a !important; }
+                .bg-grid {
+                    background-color: #fff;
+                    background-image: 
+                        linear-gradient(45deg, #efefef 25%, transparent 25%), 
+                        linear-gradient(-45deg, #efefef 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #efefef 75%), 
+                        linear-gradient(-45deg, transparent 75%, #efefef 75%);
+                    background-size: 20px 20px;
+                    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+                }
+
+                /* ── Zoom Chips ────────────────────────────── */
+                #zoom-chips {
+                    position: fixed;
+                    bottom: 54px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    display: flex;
+                    gap: 6px;
+                    z-index: 100;
+                    opacity: 0;
+                    transition: opacity 0.2s, transform 0.2s;
+                    pointer-events: none;
+                }
+                #zoom-chips.visible { 
+                    opacity: 1; 
+                    pointer-events: auto;
+                    transform: translateX(-50%) translateY(0);
+                }
+                body:not(:hover) #zoom-chips { opacity: 0; }
+
+                .chip {
+                    padding: 3px 10px;
+                    border-radius: 12px;
+                    background: color-mix(in srgb, var(--vscode-editor-background) 85%, white 15%);
+                    border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.2));
+                    font-size: 10px;
+                    cursor: pointer;
+                    transition: all 0.1s;
+                    color: var(--vscode-editor-foreground);
+                    backdrop-filter: blur(4px);
+                }
+                .chip:hover {
+                    background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.25));
+                    border-color: var(--vscode-focusBorder);
+                    transform: translateY(-1px);
+                }
+                .chip:active {
+                    transform: translateY(0);
+                }
             </style>
         </head>
         <body>
@@ -328,6 +382,16 @@ export class SvgCustomEditorProvider implements vscode.CustomTextEditorProvider 
             <div id="info-badge"></div>
             <div id="render-mode"></div>
 
+            <!-- Zoom chips -->
+            <div id="zoom-chips">
+                <div class="chip" data-zoom="0.25">25%</div>
+                <div class="chip" data-zoom="0.5">50%</div>
+                <div class="chip" data-zoom="1">100%</div>
+                <div class="chip" data-zoom="2">200%</div>
+                <div class="chip" data-zoom="4">400%</div>
+                <div class="chip" id="chip-fit">Fit</div>
+            </div>
+
             <!-- Bottom toolbar -->
             <div id="toolbar">
                 <button class="tb-btn" id="btn-zoom-out" title="Zoom Out (-)">−</button>
@@ -336,6 +400,8 @@ export class SvgCustomEditorProvider implements vscode.CustomTextEditorProvider 
                 <div class="tb-sep"></div>
                 <button class="tb-btn" id="btn-fit" title="Fit to View (F)">⊞</button>
                 <button class="tb-btn" id="btn-reset" title="Reset to 100% (0)">1:1</button>
+                <div class="tb-sep"></div>
+                <button class="tb-btn" id="btn-bg" title="Cycle Background (B)">🎨</button>
             </div>
 
             <script>
@@ -353,6 +419,7 @@ export class SvgCustomEditorProvider implements vscode.CustomTextEditorProvider 
                 const zoomLabel = document.getElementById('zoom-label');
                 const infoBadge = document.getElementById('info-badge');
                 const renderMode = document.getElementById('render-mode');
+                const zoomChips = document.getElementById('zoom-chips');
 
                 let scale = 1;
                 let translateX = 0;
@@ -364,6 +431,7 @@ export class SvgCustomEditorProvider implements vscode.CustomTextEditorProvider 
                 let naturalWidth = 0;
                 let naturalHeight = 0;
                 let lastSvgText = '';
+                let bgMode = 0; // 0: None, 1: White, 2: Black, 3: Grid
 
                 // ── SVG Parsing ──────────────────────────────
                 function parseSvgInfo(svgText) {
@@ -431,6 +499,15 @@ export class SvgCustomEditorProvider implements vscode.CustomTextEditorProvider 
                 function hideLoading() {
                     loadingOverlay.classList.remove('visible');
                     toolbar.classList.add('visible');
+                    zoomChips.classList.add('visible');
+                }
+
+                function cycleBackground() {
+                    bgMode = (bgMode + 1) % 4;
+                    container.classList.remove('bg-white', 'bg-black', 'bg-grid');
+                    if (bgMode === 1) container.classList.add('bg-white');
+                    if (bgMode === 2) container.classList.add('bg-black');
+                    if (bgMode === 3) container.classList.add('bg-grid');
                 }
 
                 function showError(msg, detail) {
@@ -648,12 +725,12 @@ export class SvgCustomEditorProvider implements vscode.CustomTextEditorProvider 
                 // ── Mouse: Double-click → Fit ────────────────
                 container.addEventListener('dblclick', () => { fitToView(true); });
 
-                // ── Keyboard Shortcuts ───────────────────────
                 window.addEventListener('keydown', (e) => {
                     if (e.key === 'f' || e.key === 'F') { fitToView(true); }
                     if (e.key === '0')                   { resetZoom(true); }
                     if (e.key === '+' || e.key === '=')  { zoomBy(1.15); }
                     if (e.key === '-' || e.key === '_')  { zoomBy(0.85); }
+                    if (e.key === 'b' || e.key === 'B')  { cycleBackground(); }
                 });
 
                 // ── Toolbar Buttons ──────────────────────────
@@ -661,7 +738,24 @@ export class SvgCustomEditorProvider implements vscode.CustomTextEditorProvider 
                 document.getElementById('btn-zoom-out').addEventListener('click', () => zoomBy(0.85));
                 document.getElementById('btn-fit').addEventListener('click',      () => fitToView(true));
                 document.getElementById('btn-reset').addEventListener('click',    () => resetZoom(true));
+                document.getElementById('btn-bg').addEventListener('click',       () => cycleBackground());
                 zoomLabel.addEventListener('click', () => resetZoom(true));
+
+                // ── Zoom Chips ───────────────────────────────
+                document.querySelectorAll('.chip[data-zoom]').forEach(chip => {
+                    chip.addEventListener('click', () => {
+                        const targetZoom = parseFloat(chip.dataset.zoom);
+                        const cr = container.getBoundingClientRect();
+                        const cx = cr.width / 2;
+                        const cy = cr.height / 2;
+                        
+                        // Smoothly zoom to the center
+                        const factor = targetZoom / scale;
+                        zoomBy(factor, cx, cy);
+                        updateTransform(true);
+                    });
+                });
+                document.getElementById('chip-fit').addEventListener('click', () => fitToView(true));
 
                 // ── Retry Button ─────────────────────────────
                 retryBtn.addEventListener('click', () => {

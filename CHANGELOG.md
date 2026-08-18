@@ -4,6 +4,11 @@ All notable changes to the "svg-viewer" extension will be documented in this fil
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.4]
+
+- Add background toggle button (White, Black, Grid)
+- Add quick zoom percentage chips
+
 ## [0.0.34]
 
 - Implemented hybrid rendering strategy: `<img>` for performance, inline SVG for complexity/foreignObject support
