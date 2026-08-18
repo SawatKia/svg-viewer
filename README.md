@@ -1,8 +1,8 @@
 # SVG Viewer for Visual Studio Code
 
-[![Version](https://img.shields.io/badge/version-0.0.4-blue.svg)](https://github.com/SawatKia/svg-viewer/releases)
+[![Release](https://img.shields.io/github/v/release/SawatKia/svg-viewer?color=blue&label=release)](https://github.com/SawatKia/svg-viewer/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![VS Code](https://img.shields.io/badge/Visual%20Studio%20Code-Extension-007ACC?logo=visualstudiocode)](https://marketplace.visualstudio.com/)
+
 
 A powerful, high-performance SVG viewer extension for VS Code featuring interactive pan & zoom, multi-mode background toggling, quick preset zoom chips, and a sidebar for managing recently opened files.
 
